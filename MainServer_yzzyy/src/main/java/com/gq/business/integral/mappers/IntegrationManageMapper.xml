@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gq.business.integral.mappers.IntegrationManageMapper">
+
+	<select id="checkAccount" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT * FROM T_EXCHANGE_USER
+		<where>
+			1 = 1
+			<if test="userName != null">
+				AND USERNAME = #{userName}
+			</if>
+			<if test="passWord != null">
+				AND PASSWORD = #{passWord}
+			</if>
+			<if test="role != null">
+				AND ROLE = #{role}
+			</if>
+		</where>
+	</select>
+	
+	<insert id="insertGoods" parameterType="com.gq.business.integral.bean.GoodsBean">
+		INSERT INTO T_INTEGRAL_GOODS_INFO 
+		(GOODS_NAME,GOODS_CODE,NEEDED_INTEGRAL,UNIT_PRICE,TOTAL_AMOUNT,CURRENT_AMOUNT,CREATE_TIME,GOODS_DESCRIPTION,PURCHASE,GOODS_STATUS)
+		values 
+		(#{goods_name},#{goods_code},#{needed_integral},#{unit_price},#{total_amount},#{current_amount},now(),#{goods_description},#{purchase},#{goods_status})
+	</insert>
+	
+	<update id="updateOrder" parameterType="java.lang.String">
+		UPDATE T_INTEGRAL_ORDER_LIST SET STATUS = '2' WHERE ORDER_NO = #{orderNo}
+	</update>
+	
+	<insert id="insertGoodsImage" parameterType="com.gq.business.integral.bean.ImageBean">
+		INSERT INTO t_source_library
+		(sourceName,sourcePath)
+		values
+		(#{sourceName},#{sourcePath})
+	</insert>
+	<select id="selectMaxGoodsCode" resultType="java.lang.String">
+		select goods_code from T_INTEGRAL_GOODS_INFO where CREATE_TIME = (select MAX(CREATE_TIME) from T_INTEGRAL_GOODS_INFO)
+	</select>
+	<update id="uploadGoodsStatus" parameterType="com.gq.business.integral.bean.GoodsBean">
+		update T_INTEGRAL_GOODS_INFO set GOODS_STATUS=#{goods_status} where GOODS_CODE = #{goods_code}
+	</update>
+	
+	<select id="selctMaxGoodsId" resultType="java.lang.Integer">
+		select max(id) from T_INTEGRAL_GOODS_INFO
+	</select>
+	
+	<select id = "queryIsHaveGoods" resultType="java.lang.Integer">
+		select count(*) from T_INTEGRAL_GOODS_INFO
+	</select>
+		<select id="integralGoodsListAll" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT C.* FROM
+			(SELECT ifnull(SUM(B.GOODS_NUM),0) as COUNT,A.GOODS_NAME, A.GOODS_CODE, A.NEEDED_INTEGRAL,
+			A.UNIT_PRICE, A.TOTAL_AMOUNT,A.CURRENT_AMOUNT, A.CREATE_TIME,
+			A.GOODS_DESCRIPTION, A.PURCHASE
+			FROM
+			t_integral_goods_info A LEFT JOIN t_integral_order_details B
+			ON A.GOODS_CODE=B.GOODS_CODE
+			WHERE A.GOODS_STATUS = #{type}
+			GROUP BY A.GOODS_CODE
+			ORDER BY A.CREATE_TIME DESC
+			) C LIMIT #{start},#{end} 
+	      
+	</select>
+	
+	<select id="integralGoodsList" parameterType="java.util.Map" resultType="java.util.Map">
+    SELECT A.* FROM
+         (
+             SELECT B.GOODS_NAME, B.GOODS_CODE, B.NEEDED_INTEGRAL, B.UNIT_PRICE, B.TOTAL_AMOUNT,
+                    B.CURRENT_AMOUNT, B.CREATE_TIME, B.GOODS_DESCRIPTION, B.PURCHASE FROM
+                    (SELECT @x:=0) r,T_INTEGRAL_GOODS_INFO B
+                WHERE
+                    (B.GOODS_NAME LIKE '${name}%' or B.GOODS_NAME LIKE '%${name}%' or B.GOODS_NAME LIKE '%${name}')
+                AND 
+                    B.GOODS_STATUS = #{type} ORDER BY B.CREATE_TIME DESC
+         ) A LIMIT #{start},#{end}
+  </select>
+	
+	<select id="integralGoodsListQtyAll" parameterType="java.util.Map" resultType="java.util.Map">
+	    SELECT count(*) value, ceil(count(*)/#{num}) page FROM
+                T_INTEGRAL_GOODS_INFO B WHERE B.GOODS_STATUS = #{type}
+	</select>
+	
+	<select id="integralGoodsListQty" parameterType="java.util.Map" resultType="java.util.Map">
+      SELECT count(*) value, ceil(count(*)/#{num}) page FROM
+                T_INTEGRAL_GOODS_INFO B WHERE B.GOODS_STATUS = #{type}
+      AND 
+          (B.GOODS_NAME LIKE '${name}%' or B.GOODS_NAME LIKE '%${name}%' or B.GOODS_NAME LIKE '%${name}')
+  </select>
+   
+   <select id="getOrder" parameterType="java.lang.String" resultType="com.gq.business.integral.bean.OrderGoodsBean">
+		select l.ORDER_NO,l.USER_NAME,l.ORDER_TIME,l.TOTAL_PRICE,l.STATUS, g.GOODS_NAME,g.GOODS_CODE, d.USEDINTEGRAL as NEEDED_INTEGRAL from T_INTEGRAL_ORDER_LIST l
+		left join (select GOODS_CODE,ORDER_NO,USEDINTEGRAL from T_INTEGRAL_ORDER_DETAILS )d on d.ORDER_NO = #{orderNo}
+		left join (select * from T_INTEGRAL_GOODS_INFO )g on g.GOODS_CODE = d.GOODS_CODE
+		where l.ORDER_NO = #{orderNo}
+	</select>
+	
+	<select id="queryOrderStatus" parameterType="java.lang.String" resultType="java.lang.String">
+		select STATUS from T_INTEGRAL_ORDER_LIST where ORDER_NO = #{orderNo}
+	</select>
+	
+	<select id="queryNameIsRepeat" parameterType="java.lang.String" resultType="java.lang.Integer">
+		SELECT COUNT(*) FROM T_INTEGRAL_GOODS_INFO WHERE GOODS_NAME = #{name} AND GOODS_STATUS !='2'
+	</select>
+	
+	<update id="editGoods" parameterType="com.gq.business.integral.bean.GoodsBean">
+	 update t_integral_goods_info set
+	 <if test="current_amount != null">
+	 TOTAL_AMOUNT=#{current_amount},
+	 </if>
+	 <if test="current_amount != null">
+	  CURRENT_AMOUNT=#{current_amount},
+	 </if>
+	 <if test="current_amount != null">
+	  EDIT_TIME=date_format(now(),'%Y-%m-%d %T')
+	 </if>
+	 <where>
+	 1 = 1
+	 <if test="goods_code != null">
+	 AND GOODS_CODE=#{goods_code}
+	 </if>
+	 </where>
+	</update>
+	
+	
+	
+	<select id="getGoodsPic" parameterType="java.lang.String" resultType="java.lang.String">
+	     SELECT a.SOURCEPATH FROM T_SOURCE_LIBRARY a WHERE a.SOURCENAME = #{value} ORDER BY a.ID DESC LIMIT 1
+	</select>
+	
+	<select id="findByCode" parameterType="com.gq.business.integral.bean.GoodsBean" resultType="java.lang.Integer">
+	    SELECT count(*) FROM t_integral_goods_info
+	    <where>
+	      1 = 1
+	      <if test="goods_code != null">
+	      AND GOODS_CODE=#{goods_code}
+	      </if>
+	    </where>
+	</select>
+	
+	<update id="updateGoods" parameterType="com.gq.business.integral.bean.GoodsBean">
+	 update t_integral_goods_info set
+	 <if test="current_amount != null">
+	 TOTAL_AMOUNT=#{current_amount},
+	 </if>
+	 <if test="current_amount != null">
+	  CURRENT_AMOUNT=#{current_amount},
+	 </if>
+	 <if test="current_amount != null">
+	  EDIT_TIME=date_format(now(),'%Y-%m-%d %T'),
+	 </if>
+	 <if test="goods_name != null">
+	 GOODS_NAME=#{goods_name},
+	 </if>
+	 <if test="needed_integral != null">
+	 NEEDED_INTEGRAL=#{needed_integral},
+	 </if>
+	 <if test="unit_price != null">
+	 UNIT_PRICE=#{unit_price},
+	 </if>
+	 <if test="goods_description != null">
+	 GOODS_DESCRIPTION=#{goods_description},
+	 </if>
+	 <if test="purchase != null">
+	 PURCHASE=#{purchase}
+	 </if>
+	 <where>
+	 1 = 1
+	 <if test="goods_code != null">
+	 AND GOODS_CODE=#{goods_code}
+	 </if>
+	 </where>
+	</update>
+	
+	<update id="updateGoodsImage" parameterType="com.gq.business.integral.bean.ImageBean">
+	   update t_source_library set
+	   <if test="sourcePath != null">
+	   sourcePath = #{sourcePath}
+	   </if>
+	   <where>
+	   1 = 1
+	   <if test="sourceName != null">
+	   AND sourceName=#{sourceName}
+	   </if>
+	   </where>
+	</update>
+	
+	<update id="deleteGoods" parameterType="java.lang.String">
+	   UPDATE t_integral_goods_info 
+	   SET GOODS_STATUS='2',EDIT_TIME=date_format(now(),'%Y-%m-%d %T') 
+	   WHERE GOODS_CODE=#{goodsCode}
+	</update>
+	
+	<!-- 根据商品编码查询兑换记录 -->
+	<select id="findOrderByOrder" parameterType="java.lang.String" resultType="java.util.Map">
+	SELECT
+	t.ORDER_NO,t.GOODS_CODE,t.GOODS_NUM,t.INTEGRAL,IFNULL(t.USEDINTEGRAL,0) as USEDINTEGRAL,l.ORDER_TIME,l.USER_NAME,l.STATUS
+	FROM t_integral_order_details t
+	LEFT JOIN t_integral_order_list l on t.ORDER_NO = l.ORDER_NO
+	where t.GOODS_CODE=#{goodsCode}
+	</select>
+	
+</mapper>

@@ -1,0 +1,127 @@
+{
+	"add": {
+		"docs": "http://rongcloud.cn/docs/server.html#group_user_gag_add",
+		"url": "group/user/gag/add",
+		"params": {
+			"group": {
+				"id": "10001",
+				"members": [{
+					"id": "memberId01"
+				}],
+				"minute": 60
+			}
+		},
+		"response":{
+			"success": {
+				"code": "200",
+				"msg": "鎴愬姛杩斿洖"
+			},
+			"fail": {
+				"20005": {
+					"code": "20005",
+					"msg": "{{name}} 鍙傛暟涓哄繀浼犻」"
+				},
+				"20006": {
+					"code": "20006",
+					"msg": "{{name}} 绫诲瀷涓嶆纭紝璇锋鏌ュ弬鏁扮被鍨�,搴旇涓� {{type}} 浼犲叆涓� {{currentType}} "
+				},
+				"1004": {
+					"code": "20000",
+					"msg": "绛惧悕閿欒, 璇锋帓鏌� Appkey銆丼ecret 鏄惁姝ｇ‘"
+				},
+				"1008": {
+					"code": "20001",
+					"msg": "璋冪敤棰戠巼瓒呴檺锛屾瘡绉掗挓闄愬埗 100 娆★紝璋冩暣棰戠巼涓婇檺璇风Щ姝ヨ嚦涓撴湁浜� http://www.rongcloud.cn/pricing#pay"
+				},
+				"20004": {
+					"code": "20004",
+					"msg": "灏佺鏃堕棿涓嶆纭�, 褰撳墠浼犲叆涓� {{size}}, 姝ｇ‘鑼冨洿 0 - 43200 鍒嗛挓, 0 涓烘案涔呯瑷�"
+				}
+			}
+		}
+	},
+	"remove": {
+		"docs": "http://rongcloud.cn/docs/server.html#group_user_gag_rollback",
+		"url": "group/user/gag/rollback",
+		"params": {
+			"group": {
+				"id": "10001",
+				"members": [{
+					"id": "memberId01"
+				}]
+			}
+		},
+		"response": {
+			"success": {
+				"code": "200",
+				"msg": "鎴愬姛杩斿洖"
+			},
+			"fail": {
+				"20003": {
+					"code": "20003",
+					"msg": "{{name}} 闀垮害瓒呴檺, {{name}} >= {{min}} 涓� {{name}} <= {{max}}"
+				},
+				"1004": {
+					"code": "20000",
+					"msg": "绛惧悕閿欒, 璇锋帓鏌� Appkey銆丼ecret 鏄惁姝ｇ‘"
+				},
+				"1008": {
+					"code": "20001",
+					"msg": "璋冪敤棰戠巼瓒呴檺锛屾瘡绉掗挓闄愬埗 100 娆★紝璋冩暣棰戠巼涓婇檺璇风Щ姝ヨ嚦涓撴湁浜� http://www.rongcloud.cn/pricing#pay"
+				},
+				"20004": {
+					"code": "20004",
+					"msg": "灏佺鏃堕棿瓒呴檺, 鏈�闀夸笉瓒呰繃 43200 鍒嗛挓"
+				},
+				"20005": {
+					"code": "20005",
+					"msg": "{{name}} 鍙傛暟涓哄繀浼犻」"
+				},
+				"20006": {
+					"code": "20006",
+					"msg": "{{name}} 绫诲瀷涓嶆纭紝璇锋鏌ュ弬鏁扮被鍨�,搴旇涓� {{type}} 浼犲叆涓� {{currentType}} "
+				}
+			}
+		}
+	},
+	"getList": {
+		"docs": "http://rongcloud.cn/docs/server.html#group_user_gag_list",
+		"url": "group/user/gag/list",
+		"params": {
+			"group": {
+				"id": "10001",
+			}
+		},
+		"response":{
+			"success": {
+				"code": "200",
+				"members": [{
+					"time": "2015-09-25 16:12:38",
+					"id": "2582"
+				}]
+			},
+			"fail": {
+				"20003": {
+					"code": "20003",
+					"msg": "{{name}} 闀垮害瓒呴檺, {{name}} >= {{min}} 涓� {{name}} <= {{max}}"
+				},
+				"20005": {
+					"code": "20005",
+					"msg": "{{name}} 鍙傛暟涓哄繀浼犻」"
+				},
+				"20006": {
+					"code": "20006",
+					"msg": "user 绫诲瀷涓嶆纭紝璇锋鏌ュ弬鏁扮被鍨�,搴旇涓� {{type}} 浼犲叆涓� {{currentType}} "
+				},
+				"1004": {
+					"code": "20000",
+					"msg": "绛惧悕閿欒, 璇锋帓鏌� Appkey銆丼ecret 鏄惁姝ｇ‘"
+				},
+				"1008": {
+					"code": "20001",
+					"msg": "璋冪敤棰戠巼瓒呴檺锛屾瘡绉掗挓闄愬埗 100 娆★紝璋冩暣棰戠巼涓婇檺璇风Щ姝ヨ嚦涓撴湁浜� http://www.rongcloud.cn/pricing#pay"
+				}
+			}
+		}
+	}
+}

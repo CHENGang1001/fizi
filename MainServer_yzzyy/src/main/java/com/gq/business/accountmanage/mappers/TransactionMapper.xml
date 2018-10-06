@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gq.business.accountmanage.mappers.TransactionMapper">
+	<select id="checkTransaction"
+		parameterType="com.gq.business.accountmanage.model.TransactionBean"
+		resultType="java.lang.Integer">
+		SELECT count(*) FROM t_transaction WHERE transid = #{transID}
+		AND username = #{userName}
+	</select>
+
+	<insert id="insert"
+		parameterType="com.gq.business.accountmanage.model.TransactionBean">
+		INSERT INTO t_transaction(transid, username,approach,sign) 
+		VALUES(#{transID}, #{userName},#{approach},#{sign})
+	</insert>
+
+	<delete id="destory"
+		parameterType="com.gq.business.accountmanage.model.TransactionBean">
+		DELETE FROM t_transaction WHERE transid = #{transID}
+	</delete>
+	
+	<delete id="deleteByUsr"
+		parameterType="com.gq.business.accountmanage.model.TransactionBean">
+		DELETE FROM t_transaction WHERE username = #{userName}
+	</delete>
+	
+	<update id="truncateTransation">
+	   <![CDATA[truncate table T_TRANSACTION]]>
+	</update>
+	
+	<select id="getTransidByUserName"
+		parameterType="java.lang.String"
+		resultType="java.lang.String">
+		SELECT transid FROM t_transaction WHERE username = #{userName}
+	</select>
+</mapper>

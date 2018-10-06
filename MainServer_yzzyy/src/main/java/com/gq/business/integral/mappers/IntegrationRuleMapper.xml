@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gq.business.integral.mappers.IntegrationRuleMapper">
+
+	<select id="getIntegrationRule" parameterType="java.util.Map"
+		resultType="com.gq.business.integral.bean.IntegrationRuleBean">
+		select * FROM T_INTEGRAL_RULE_LIST WHERE integral_type = #{type} and status
+		= '1'
+	</select>
+
+	<select id="selectAllIntegrationRule" parameterType="java.util.Map"
+		resultType="com.gq.business.integral.bean.IntegrationRuleBean">
+		select * FROM T_INTEGRAL_RULE_LIST WHERE 1 = 1
+		<if test="start_time != null and start_time != ''">
+			and start_time &gt;= #{start_time}
+		</if>
+		<if test="end_time != null and end_time != ''">
+			and end_time &lt;= #{end_time}
+		</if>
+		<if test="type_name != null and type_name != ''">
+			and type_name = #{type_name}
+		</if>
+		<if test="status != null and status != ''">
+			and status = #{status}
+		</if>
+	</select>
+
+	<insert id="insertIntegrationRule" parameterType="com.gq.business.integral.bean.IntegrationRuleBean">
+		INSERT INTO
+		T_INTEGRAL_RECORD (user_name, current_integral, current_time, expired_time, rule_id)
+		VALUES
+		(#{userName}, #{integraValue}, #{currentTime}, #{expiredTime}, #{ruleId})
+	</insert>
+
+</mapper>

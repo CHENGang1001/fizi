@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gq.business.accountmanage.mappers.PublicUserMapper">
+
+	<select id="getByID" parameterType="com.gq.business.accountmanage.model.PublicUserBean" resultType="com.gq.business.accountmanage.model.PublicUserBean">
+		SELECT * FROM t_publicuser WHERE userid = #{userID}
+	</select>
+
+	<update id="updateUser" parameterType="com.gq.business.accountmanage.model.PublicUserBean">
+		UPDATE t_publicuser SET msisdn=#{msisdn}, userName=#{userName}, gender=#{gender}, age=#{age}
+		<where>
+			userid = #{userID}
+		</where>
+	</update>
+
+	<select id="userNoByMsisdn" parameterType="com.gq.business.accountmanage.model.PublicUserBean" resultType="java.lang.Integer">
+		SELECT count(*) FROM t_publicuser WHERE msisdn = #{msisdn}
+	</select>
+
+	<!-- 注册用户 -->
+	<insert id="addUser" parameterType="com.gq.business.accountmanage.model.PublicUserBean">
+		INSERT INTO t_publicuser(userid, username, password, msisdn,shareUser,approach)
+		VALUES (REPLACE(UUID(),'-',''), #{userName}, #{password}, #{msisdn},#{shareUser},#{approach})
+	</insert>
+
+	<select id="checkAccount" parameterType="com.gq.business.accountmanage.model.PublicUserBean" resultType="com.gq.business.accountmanage.model.PublicUserBean">
+		SELECT * FROM t_publicuser WHERE msisdn = #{msisdn} AND
+		password = #{password}
+	</select>
+
+	<select id="checkAccountByMsisdn" parameterType="com.gq.business.accountmanage.model.PublicUserBean" resultType="com.gq.business.accountmanage.model.PublicUserBean">
+		SELECT * FROM t_publicuser WHERE msisdn = #{msisdn}
+		AND
+		password = #{password}
+	</select>
+
+	<update id="changePwd" parameterType="com.gq.business.accountmanage.model.PublicUserBean">
+		UPDATE t_publicuser SET password=#{newPassword}
+		<where>
+			'a' = 'a'
+			<if test="msisdn != null">AND msisdn = #{msisdn}</if>
+			<if test="userName != null">AND username = #{userName}</if>
+		</where>
+	</update>
+
+	<select id="queryPatientCard" parameterType="com.gq.business.accountmanage.model.PublicUserBean" resultType="com.gq.business.accountmanage.model.PublicUserBean">
+		SELECT patientcardid, msisdn FROM t_publicuser
+		WHERE
+		username = #{userName}
+	</select>
+
+	<update id="bindPatientCard" parameterType="com.gq.business.accountmanage.model.PublicUserBean">
+		UPDATE t_publicuser set patientcardid=#{patientCardID}
+		WHERE username = #{userName}
+	</update>
+
+	<select id="queryUserInfoByUserName" resultType="com.gq.business.accountmanage.model.PublicUserBean">
+		SELECT * FROM t_publicuser A WHERE A.USERNAME = #{userName}
+	</select>
+
+	<select id="getUserNameByMsisdn" resultType="string">
+		SELECT username FROM t_publicuser t WHERE t.msisdn = #{msisdn}
+	</select>
+
+	<!-- 更新健康卡信息 modify by xfyang at 2015年6月18日17:40:11 -->
+	<update id="updateHealthCardInfo" parameterType="com.gq.business.accountmanage.model.PublicUserBean">
+		UPDATE t_publicuser
+		SET patienthealthcardid = #{patientHealthCardID},
+		leavePhoneNumber = #{phoneNumber},
+		patientid =
+		#{patientID}
+		WHERE username = #{userName}
+	</update>
+
+	<update id="updateHealthCardByUserName">
+		UPDATE t_publicuser
+		SET patienthealthcardid = #{outCardNo}
+		WHERE username = #{userName}
+	</update>
+		<select id="getPublicUserByOrderID" parameterType="java.lang.String" resultType="com.gq.business.accountmanage.model.PublicUserBean">
+		SELECT * FROM t_publicuser a, t_payment_order b WHERE a.userid = b.createrId and b.orderId=#{orderId}
+	</select>
+	
+	
+	<!-- 用户登录信息入库 -->
+	<insert id="addloginInfo" parameterType="com.gq.business.accountmanage.model.LoginInfoBean">
+		INSERT INTO t_login(userid, channel, logintime, endtime)
+		VALUES (#{userid}, #{channel}, now(), '9999-09-09 00:00:00')
+	</insert>
+	
+	<!-- 查出用户上次登录的历史 -->
+	<select id="selectId"  parameterType="com.gq.business.accountmanage.model.LoginInfoBean" resultType="com.gq.business.accountmanage.model.LoginInfoBean">
+		SELECT * FROM t_login 
+		where
+		userid = #{userid}
+ 	 GROUP BY logintime DESC  limit 1
+	</select>
+	
+	<!-- 更改上一次登录记录的结束时间 -->
+	<update id="editloginInfo" parameterType="com.gq.business.accountmanage.model.LoginInfoBean">
+		UPDATE t_login SET endtime = now() WHERE id = #{id}
+	</update>
+</mapper>

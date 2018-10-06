@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gq.business.inforesources.mappers.GetMedicineListMapper">
+
+    <resultMap type="com.gq.business.inforesources.model.GetMedicineDetail"
+        id="GetMedicineDetail">
+        <!-- column:数据库中表的字段 property：数据库中表所有映射的实体类javaBean中的属性名 -->
+        <id column="medicineid" property="medicineId" />
+        <result column="medicinename" property="medicineName" />
+        <result column="medicinesummary" property="medicineSummary" typeHandler="com.gq.business.inforesources.model.MyBlobTypeHandler"/>
+        <result column="medicinedetail" property="medicineDetail" typeHandler="com.gq.business.inforesources.model.MyBlobTypeHandler" />
+        <result column="medicineclassification" property="medicineClassification" />
+        <result column="manufacturer" property="manufacturer" />
+        
+    </resultMap>
+    
+     <select id="getMedicineList" resultType="com.gq.business.inforesources.model.GetMedicineList">
+        select * from t_medicinedetail t where t.medicinecategoryid=#{id}
+    </select>
+    
+    <select id="getMedicineDetail" resultMap="GetMedicineDetail">
+        select * from t_medicinedetail t where t.medicineid=#{id}
+    </select>
+</mapper>

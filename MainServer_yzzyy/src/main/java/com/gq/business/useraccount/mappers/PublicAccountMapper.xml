@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.gq.business.useraccount.mappers.PublicAccountMapper">
+
+	<select id="checkAccount" parameterType="com.gq.business.useraccount.model.UserInfoBean" resultType="com.gq.business.useraccount.model.UserInfoBean">
+		select * from t_logininfo where userid = #{phoneNumber} order by registdate desc limit 1
+	</select>
+	
+	<select id="getUserNameByMsisdn" resultType="string">
+		SELECT phonenumber FROM t_logininfo t WHERE t.phonenumber = #{phoneNumber}
+	</select>
+	
+	<select id="userNoByMsisdn" parameterType="com.gq.business.useraccount.model.UserInfoBean" resultType="java.lang.Integer">
+		SELECT count(*) FROM t_loginInfo WHERE phonenumber = #{phoneNumber}
+	</select>
+	
+	<insert id="registerUserInfo" parameterType="com.gq.business.useraccount.model.UserInfoBean">
+	    INSERT INTO t_logininfo(userid,phonenumber,password,client,isclose,registdate,headpic,username,userType) 
+	    VALUES(#{phoneNumber},#{phoneNumber},#{password},#{client},#{isClose},now(),#{headPic},#{userName},#{userType})
+	</insert>
+	
+	<insert id="registerRCUserInfo" parameterType="com.gq.business.useraccount.model.UserInfoBean">
+	    INSERT INTO t_rcinfo(rcuserid,rcheadpic,rcusername,rctoken) 
+	    VALUES(#{rcUserId},#{headPic},#{userName},#{rcToken})
+	</insert>
+	
+	<select id="getUserInfo" parameterType="com.gq.business.useraccount.model.UserInfoBean" resultType="com.gq.business.useraccount.model.UserInfoBean">
+		select * from t_logininfo a,t_rcinfo b 
+		where a.phonenumber = #{phoneNumber} and a.password= #{password} and a.userid = b.rcuserid
+	</select>
+	
+	<select id="getUserInforAiliLogin" parameterType="com.gq.business.useraccount.model.UserInfoBean" resultType="com.gq.business.useraccount.model.UserInfoBean">
+		select * from t_logininfo a,t_rcinfo b 
+		where a.ailiAuthId = #{ailiAuthId} and a.userid = b.rcuserid
+	</select>
+	
+	<select id="getUserInforQQLogin" parameterType="com.gq.business.useraccount.model.UserInfoBean" resultType="com.gq.business.useraccount.model.UserInfoBean">
+		select * from t_logininfo a,t_rcinfo b 
+		where a.qqopenId = #{qqopenId} and a.userid = b.rcuserid
+	</select>
+	
+	<select id="getUserInforThirdLogin" parameterType="com.gq.business.useraccount.model.UserInfoBean" resultType="com.gq.business.useraccount.model.UserInfoBean">
+		select * from t_logininfo a,t_rcinfo b 
+		where a.openid = #{openId} and a.userid = b.rcuserid
+	</select>
+	
+	<select id="getUserInfoToken" parameterType="com.gq.business.useraccount.model.UserInfoBean" resultType="com.gq.business.useraccount.model.UserInfoBean">
+		select * from t_logininfo where token = #{token} and password=#{password}
+	</select>
+	
+	<update id="updateUserInfoPwd" parameterType="com.gq.business.useraccount.model.UserInfoBean">
+		UPDATE t_logininfo SET password = #{password} WHERE token = #{token} 
+	</update>
+	
+	<update id="updateLoginUserOpenId" parameterType="com.gq.business.useraccount.model.UserInfoBean">
+		UPDATE t_logininfo SET openid = #{openId} WHERE userid = #{userId} 
+	</update>
+	
+	<update id="updateLoginqqOpenId" parameterType="com.gq.business.useraccount.model.UserInfoBean">
+		UPDATE t_logininfo SET qqopenId = #{qqopenId} WHERE userid = #{userId}
+	</update>
+	
+	<update id="updateLoginAiliOpenId" parameterType="com.gq.business.useraccount.model.UserInfoBean">
+		UPDATE t_logininfo SET ailiAuthId = #{ailiAuthId} WHERE userid = #{userId} 
+	</update>
+	
+	
+	<update id="updateLoginUserInfo" parameterType="com.gq.business.useraccount.model.UserInfoBean">
+		UPDATE t_logininfo SET token = #{token},client = #{client},lastlogindate = now(),qiniuServeUrl = #{qiniuServeUrl},qiniuToken=#{qiniuToken} WHERE userid = #{phoneNumber} 
+	</update>
+	
+	<update id="forgotPwd" parameterType="com.gq.business.useraccount.model.UserInfoBean">
+		UPDATE t_logininfo SET password = #{password} WHERE phonenumber = #{phoneNumber} 
+	</update>
+	
+	<select id="checkLoginToken" parameterType="string" resultType="com.gq.business.useraccount.model.UserInfoBean">
+		select * from t_logininfo where token = #{token}
+	</select>
+</mapper>

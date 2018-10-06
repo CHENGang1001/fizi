@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gq.business.integral.mappers.IntegralMapper">
+
+	<select id="getIntegralerInfo" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		SELECT * FROM T_INTEGRAL_LIST WHERE USER_NAME = #{userName}
+	</select>
+	
+	<select id="getCountForShareuser" resultType="java.lang.Integer">
+		SELECT count(*) FROM mobile_hospital_yzzyy.t_integral_record 
+		where USER_NAME = #{userName} 
+		and RULE_ID = '4'
+	</select>
+
+	<select id="getOnSaleGoodsList" resultType="java.util.Map">
+		SELECT * FROM
+		    T_INTEGRAL_GOODS_INFO
+    WHERE
+        GOODS_STATUS = '0'
+		ORDER BY CREATE_TIME desc
+	</select>
+
+	<select id="getGoodsSummary" parameterType="java.util.Map"
+		resultType="java.lang.String">
+		SELECT SELL_NUM FROM
+		    T_INTEGRAL_DAY_SUMMARY
+		WHERE
+		    GOODS_CODE = #{GOODS_CODE} and SELL_TYPE = #{SELL_TYPE} and TIME = #{TIME}
+	</select>
+
+	<select id="getIntegralRecordList" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		SELECT * FROM
+		    T_INTEGRAL_RECORD
+		WHERE
+		    USER_NAME = #{userName}
+		ORDER BY CURRENT_TIME desc
+	</select>
+
+	<select id="getRuleName" parameterType="java.lang.String"
+		resultType="java.lang.String">
+		SELECT TYPE_NAME FROM
+		    T_INTEGRAL_RULE_LIST
+		WHERE INTEGRAL_TYPE = #{value} and `status` = '1'
+	</select>
+
+	<select id="getRankingList" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		        SELECT a.*,@x:=@x+1 rank FROM
+		(
+				SELECT T.USER_NAME user_name,t.TOTAL_VALUE - t.EXCHANGE_VALUE num, t.LAST_OBTAIN_TIME last_time 
+				FROM (SELECT @x:=0) r, t_integral_list t 
+				WHERE t.TOTAL_VALUE >= t.EXCHANGE_VALUE and t.LAST_OBTAIN_TIME BETWEEN #{startTime} and #{endTime}
+			    OR t.LAST_EXCHANGE_TIME BETWEEN #{startTime} AND #{endTime}
+				ORDER BY num desc, last_time desc
+    		) a limit 10
+	</select>
+
+	<select id="getIntegralOrderList" parameterType="java.lang.String"
+		resultType="java.util.Map">
+		<!-- SELECT c.*, d.GOODS_NAME, d.NEEDED_INTEGRAL FROM (SELECT a.ORDER_TIME,
+		a.STATUS, a.ORDER_NO, a.USER_NAME, b.GOODS_CODE
+		FROM T_INTEGRAL_ORDER_LIST a,
+		T_INTEGRAL_ORDER_DETAILS b
+		WHERE (a.STATUS = '1' or a.STATUS = '2') and a.USER_NAME =
+		#{value} and a.ORDER_NO = b.ORDER_NO) c, T_INTEGRAL_GOODS_INFO
+		d WHERE c.GOODS_CODE = d.GOODS_CODE
+		ORDER BY c.ORDER_TIME DESC -->
+		SELECT c.*, d.GOODS_NAME FROM (SELECT a.ORDER_TIME,
+		a.STATUS, a.ORDER_NO, a.USER_NAME, b.GOODS_CODE, ifNull(b.USEDINTEGRAL,' ') as NEEDED_INTEGRAL
+		FROM T_INTEGRAL_ORDER_LIST a,
+		T_INTEGRAL_ORDER_DETAILS b
+		WHERE (a.STATUS = '1' or a.STATUS = '2') and a.USER_NAME =
+		#{value} and a.ORDER_NO = b.ORDER_NO) c, T_INTEGRAL_GOODS_INFO
+		d WHERE c.GOODS_CODE = d.GOODS_CODE
+		ORDER BY c.ORDER_TIME DESC
+	</select>
+
+	<select id="isIntegralEnough" parameterType="java.util.Map"
+		resultType="java.lang.Integer">
+		SELECT
+		(
+		SELECT
+		(
+		SELECT
+		a.TOTAL_VALUE - a.EXCHANGE_VALUE
+		FROM
+		T_INTEGRAL_LIST a
+		WHERE
+		a.USER_NAME = #{userName}
+		)
+		- (b.NEEDED_INTEGRAL *
+		#{goodsNum})
+		FROM
+		T_INTEGRAL_GOODS_INFO b
+		WHERE
+		b.GOODS_CODE =
+		#{goodsCode}
+		)
+		FROM DUAL
+	</select>
+
+	<select id="getCanExchangedNum" parameterType="java.util.Map"
+		resultType="java.lang.Integer">
+		SELECT
+		(
+		SELECT
+		(
+		CASE
+		WHEN a.PURCHASE = 0 then a.CURRENT_AMOUNT
+		else DECODE(sign(a.CURRENT_AMOUNT - (a.PURCHASE - NVL(b.SELL_NUM,0))),
+		-1,
+		a.CURRENT_AMOUNT, (a.PURCHASE - NVL(b.SELL_NUM,0))) end
+		) val
+		FROM
+		T_INTEGRAL_GOODS_INFO a
+		LEFT JOIN
+		T_INTEGRAL_DAY_SUMMARY b
+		ON
+		a.GOODS_CODE = b.GOODS_CODE and b.SELL_TYPE = #{sellType} and b.TIME =
+		#{time}
+		WHERE a.GOODS_CODE = #{goodsCode}
+		)
+		FROM DUAL
+	</select>
+
+	<update id="updateGoodsInventory" parameterType="java.util.Map">
+		update
+		T_INTEGRAL_GOODS_INFO a set a.CURRENT_AMOUNT = (a.CURRENT_AMOUNT -
+		#{goodsNum}) where a.GOODS_CODE = #{goodsCode}
+	</update>
+
+	<update id="updateGoodsDaySummary" parameterType="java.util.Map">
+		update
+		T_INTEGRAL_DAY_SUMMARY a set a.SELL_NUM = (a.SELL_NUM + #{goodsNum})
+		where
+		a.GOODS_CODE = #{goodsCode} and a.SELL_TYPE = #{sellType} and
+		a.TIME = #{time}
+	</update>
+
+	<insert id="insertGoodsDaySummary" parameterType="java.util.Map">
+		INSERT INTO
+		T_INTEGRAL_DAY_SUMMARY (GOODS_CODE, SELL_NUM, SELL_TYPE, TIME)
+		VALUES
+		(#{goodsCode}, #{goodsNum}, #{sellType}, #{time})
+	</insert>
+	
+	<update id="updateUserIntegralList"
+      parameterType="java.util.Map">
+      update
+          T_INTEGRAL_LIST a
+      set
+          a.EXCHANGE_VALUE = (a.EXCHANGE_VALUE + ((SELECT b.NEEDED_INTEGRAL FROM T_INTEGRAL_GOODS_INFO b WHERE b.GOODS_CODE = #{goodsCode}) * #{goodsNum})),
+          a.EXCHANGE_COUNT = (a.EXCHANGE_COUNT + '1'),
+          a.LAST_EXCHANGE_TIME = #{currentTime}
+      where
+          a.USER_NAME = #{userName}
+  </update>
+	
+	<insert id="insertIntegrationDetail" parameterType="java.util.Map">
+		INSERT INTO
+		T_INTEGRAL_RECORD (user_name, current_integral, creatdate, expired_time, rule_id)
+		VALUES
+		(#{userName}, #{integraValue}, #{currentTime}, #{expiredTime}, #{ruleId})
+	</insert>
+
+	<select id="getGoodsInfoByCode" parameterType="java.lang.String"
+    resultType="java.util.Map">
+	   SELECT * FROM T_INTEGRAL_GOODS_INFO b WHERE b.GOODS_CODE = #{value}
+	</select>
+	
+	<insert id="insertIntegralOrderList" parameterType="java.util.Map">
+    INSERT INTO
+        T_INTEGRAL_ORDER_LIST (ORDER_NO, USER_NAME, ORDER_TIME, TOTAL_PRICE, STATUS)
+    VALUES
+        (#{orderNo}, #{userName}, #{currentTime}, #{totalPrice}, #{status})
+  </insert>
+  
+	<insert id="insertIntegralOrderDetails" parameterType="java.util.Map">
+    INSERT INTO
+        T_INTEGRAL_ORDER_DETAILS (ORDER_NO, GOODS_CODE, GOODS_NUM, CASH, INTEGRAL, COUPON, RESERVED, OPERATER_ID, USEDINTEGRAL)
+    VALUES
+        (#{orderNo}, #{goodsCode}, #{goodsNum}, #{cash}, #{integral}, #{coupon}, #{reserved}, #{operaterId}, #{integraValue})
+  </insert>
+	
+	<update id="updateIntegrationList" parameterType="java.util.Map">
+		<!-- begin update T_INTEGRAL_LIST a set a.total_value = (a.total_value 
+			+ #{total_value}), a.obtain_count = (a.obtain_count + '1'), a.last_obtain_time 
+			= #{last_obtain_time} where a.user_name = #{userName} if sql%notfound then 
+			INSERT INTO T_INTEGRAL_LIST (id, user_name, total_value, exchange_value, 
+			obtain_count, exchange_count, last_obtain_time, last_exchange_time) VALUES 
+			(SEQ_T_INTEGRAL_LIST_ID.NEXTVAL, #{userName}, #{total_value},#{exchange_value}, 
+			#{obtain_count}, #{exchange_count}, #{last_obtain_time},#{last_exchange_time}) 
+			end if; end; 
+		merge into T_INTEGRAL_LIST t
+		using ( select #{userName} as user_name from dual ) t1
+		on(t.user_name = t1.user_name)
+		when not matched then
+		INSERT (id, user_name,
+		total_value, exchange_value,
+		obtain_count,
+		exchange_count,
+		last_obtain_time, last_exchange_time)
+		VALUES
+		(SEQ_T_INTEGRAL_LIST_ID.NEXTVAL,
+		#{userName},
+		#{total_value},#{exchange_value},
+		#{obtain_count}, #{exchange_count},
+		#{last_obtain_time},#{last_exchange_time})
+		when matched then
+		update set t.total_value = (t.total_value +
+		#{total_value}), t.obtain_count =
+		(t.obtain_count + '1'),
+		t.last_obtain_time = #{last_obtain_time}
+-->
+	INSERT INTO mobile_hospital_yzzyy.t_integral_list
+(USER_NAME,TOTAL_VALUE, exchange_value, obtain_count, exchange_count, last_obtain_time, last_exchange_time)
+VALUES(	#{userName}, #{total_value},#{exchange_value}, 
+		#{obtain_count}, #{exchange_count}, 
+		#{last_obtain_time},#{last_exchange_time})
+ON DUPLICATE KEY UPDATE total_value = (total_value + #{total_value}), obtain_count = (obtain_count + '1'), last_obtain_time = #{last_obtain_time}
+        
+	</update>
+
+	<insert id="insertIntegrationList" parameterType="java.util.Map">
+		INSERT INTO
+		T_INTEGRAL_LIST (user_name, total_value, exchange_value,
+		obtain_count, exchange_count, last_obtain_time, last_exchange_time)
+		VALUES
+		(#{userName},
+		#{total_value},#{exchange_value},
+		#{obtain_count}, #{exchange_count},
+		#{last_obtain_time},#{last_exchange_time})
+	</insert>
+
+	<update id="deleteIntegralOrder" parameterType="java.lang.String">
+	    UPDATE
+	       T_INTEGRAL_ORDER_LIST a
+	    SET
+	       a.STATUS = '3'
+	    WHERE
+	       a.ORDER_NO = #{value} and a.STATUS = '2'
+	</update>
+	
+	<select id="getIntegralGoodsPic" parameterType="java.lang.String"
+	    resultType="java.lang.String">
+	    SELECT a.SOURCEPATH FROM T_SOURCE_LIBRARY a WHERE a.SOURCENAME = #{value} ORDER BY a.ID DESC LIMIT 1
+	</select>
+	
+	<select id="selectAmount" parameterType="java.util.Map"
+	    resultType="java.util.Map">
+	    SELECT `CURRENT_AMOUNT`,`PURCHASE`,(SELECT SELL_NUM FROM `t_integral_day_summary` WHERE `GOODS_CODE`=#{goodsCode} AND `TIME`=#{time}) SELL_NUM FROM `t_integral_goods_info` WHERE `GOODS_CODE` = #{goodsCode};
+	</select>
+	
+</mapper>

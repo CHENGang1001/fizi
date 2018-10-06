@@ -1,0 +1,475 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gq.business.payment.mappers.PaymentMapper">
+
+  <!-- 获取订单列表 -->
+  <select id="queryOrderListByCardNum" parameterType="com.gq.business.payment.model.OrderBean" resultType="com.gq.business.payment.model.OrderBean">
+    SELECT a.orderid, a.createdate AS orderdate, CASE WHEN a.pricelistid IS NULL THEN '0' ELSE '1' END AS ordertype, 
+         a.totalprice AS fee,
+         e.departmentid AS departmentID, e.departmentname AS departmentName, e.registertype AS appointmentType
+    FROM t_order a
+    LEFT JOIN t_pricelist b ON (a.pricelistid = b.pricelistid)
+    LEFT JOIN ( 
+          SELECT DISTINCT c.pricelistid
+          FROM t_pricelist_detail c
+          WHERE c.cardno = #{patientCardNumber}
+          ) d ON (b.pricelistid = d.pricelistid)
+    LEFT JOIN t_reservation e ON (a.cliniccode = e.cliniccode) AND (e.cardno = #{patientCardNumber})
+    <where>
+      1=1
+      <if test="payStatus != null and payStatus!=''">
+        AND paystatus = #{payStatus}
+      </if>
+    </where>
+    ORDER BY a.createdate desc
+  </select>
+  
+  <!-- 获取订单列表，分页 -->
+  <select id="queryOrderListByCardNumAndPage" parameterType="com.gq.business.payment.model.OrderBean" resultType="com.gq.business.payment.model.OrderBean">
+    SELECT * FROM
+        (
+          SELECT P.*, ROWNUM RN FROM
+          (
+        SELECT a.orderid, a.createdate AS orderdate, CASE WHEN a.pricelistid IS NULL THEN '0' ELSE '1' END AS ordertype, 
+             a.totalprice AS fee,
+             e.departmentid AS departmentID, e.departmentname AS departmentName, e.registertype AS appointmentType
+        FROM t_order a
+        LEFT JOIN t_pricelist b ON (a.pricelistid = b.pricelistid)
+        LEFT JOIN ( 
+              SELECT DISTINCT c.pricelistid
+              FROM t_pricelist_detail c
+              WHERE c.cardno = #{patientCardNumber}
+              ) d ON (b.pricelistid = d.pricelistid)
+        LEFT JOIN t_reservation e ON (a.cliniccode = e.cliniccode) AND (e.cardno = #{patientCardNumber})
+        <where>
+          1 = 1
+          <if test="payStatus != null and payStatus!=''">
+            AND paystatus = #{payStatus}
+          </if>
+        </where>
+        ORDER BY a.createdate desc
+      ) P
+          WHERE <![CDATA[ ROWNUM<= #{pageEnd} ]]>
+        )
+        WHERE RN >= #{pageStart}
+  </select>
+  
+  <select id="queryOrderByID" parameterType="com.gq.business.payment.model.OrderBean" resultType="com.gq.business.payment.model.OrderBean">
+    SELECT a.orderid, a.createdate AS orderdate, CASE WHEN a.pricelistid IS NULL THEN '0' ELSE '1' END AS ordertype,
+           a.cliniccode AS clinicCode, a.priceListid AS priceListID
+    FROM t_order a
+    WHERE a.orderid = #{orderID}
+  </select>
+  
+  <select id="queryPriceListDetail" parameterType="com.gq.business.payment.model.OrderBean" resultType="com.gq.business.payment.model.PriceListDetailBean">
+    SELECT a.itemclass AS type, a.itemname AS name, a.units AS unit, a.itemspec AS specification, 
+         a.price, a.amount
+    FROM t_pricelist_detail a
+    <where>
+      1=1
+      <if test="priceListID != null and priceListID!=''">
+        AND a.pricelistid = #{priceListID}
+      </if>
+    </where>
+  </select>
+  
+  <select id="queryReservationInfo" parameterType="com.gq.business.payment.model.OrderBean" resultType="com.gq.business.payment.model.ReservationBean">
+    SELECT a.*
+    FROM t_reservation a
+    <where>
+      1=1
+      <if test="clinicCode != null and clinicCose!=''">
+        AND a.cliniccode = #{clinicCode}
+      </if>
+    </where>
+  </select>
+  
+  <insert id="inserOrder" parameterType="com.gq.business.payment.model.OrderBean">
+    INSERT INTO t_order(
+    orderid
+    , pricelistid
+    , cliniccode
+    , reservateflow
+    , username
+    , totalprice
+    , unionpayid
+    , unionpayidtime
+    , qunionpayid
+    , paystatus
+    , synhisstatus
+    , synhiserrormsg
+    , synhisstatusdate
+    , createdate)
+    VALUES (
+    REPLACE(UUID(),'-','')
+    , #{priceListID, jdbcType=VARCHAR}
+    , #{clinicCode, jdbcType=VARCHAR}
+    , #{reservateFlow, jdbcType=VARCHAR}
+    , #{userName}
+    , #{totalPrice}
+    , #{unionPayID, jdbcType=VARCHAR}
+    , #{unionPayIDTime, jdbcType=VARCHAR}
+    , #{qUnionPayID, jdbcType=VARCHAR}
+    , #{payStatus}
+    , #{synHisStatus, jdbcType=VARCHAR}
+    , #{synHisErrorMsg, jdbcType=VARCHAR}
+    , #{synHisStatusDate, jdbcType=VARCHAR}
+    , TO_CHAR(sysdate, 'YYYYMMDDHH24MISS'))
+  </insert>
+
+  <insert id="insertPriceList" parameterType="com.gq.business.payment.model.PriceListBean">
+    INSERT INTO t_pricelist(
+    pricelistid
+    , deptcode
+    , deptname
+    , doctorcode
+    , doctorname
+    , diagnose
+    , windowno
+    , presonneltype) 
+    VALUES (
+    REPLACE(UUID(),'-','')
+    , #{deptCode}
+    , #{deptName}
+    , #{doctorCode}
+    , #{doctorName}
+    , #{diagnose}
+    , #{windowNo}
+    , #{personnelType})
+  </insert>
+
+    <select id="checkPreNoByPreNo" parameterType="com.gq.business.payment.model.OrderBean" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM t_pricelist a WHERE a.pricelistid = #{priceListID}
+    </select>
+    
+    
+    <!-- 建行支付预约流水 -->
+    <insert id="insertRecord"
+        parameterType="com.gq.business.payment.model.TradingRecordBean">
+    insert into
+        t_payment_order(orderid,paymenturl,status,createtime,timeout_date,
+                        amount,pay_for,finish_date,pay_type,cancelregister,cancelregisterdate,createrId,approach)
+    values
+        (#{orderId},#{paymentUrl},#{status},#{createTime},#{timeout_date},
+        #{amount},#{pay_for},#{finish_date},#{pay_type},#{cancelregister},#{cancelregisterdate},#{createrId},#{approach})
+    </insert>
+    
+      <!-- 获取建行支付订单列表 -->
+    <select id="getOrdreList" parameterType="com.gq.business.payment.model.TradingRecordBean" resultType="com.gq.business.payment.model.TradingRecordBean">
+    SELECT *
+    FROM t_payment_order 
+    <where>
+      1 = 1
+      <if test="orderId != null and orderId!=''">
+        AND orderId = #{orderId}
+      </if>
+      <if test="status!=null and status!=''">
+        AND status = #{status}
+      </if>
+    </where>
+    ORDER BY createtime desc
+    </select>
+    
+    <!-- 更新建行支付订单状态 -->
+    <update id="updateCcbOrder" parameterType="com.gq.business.payment.model.TradingRecordBean">
+    UPDATE t_payment_order 
+    SET paymentUrl=#{paymentUrl}, status=#{status}, createTime=#{createTime}, timeout_date=#{timeout_date}
+      , amount=#{amount}, pay_for=#{pay_for}, finish_date=#{finish_date}, pay_type=#{pay_type}
+    <where>
+      orderId = #{orderId}
+    </where>
+    </update>
+    
+    <!-- 当日挂号支付数据 -->
+    <insert id="insertRegisterPay" parameterType="java.util.Map">
+    insert into
+        t_registerpay_order(orderId,cardType,cardNo,name,idCard,passWord,
+                        proCode,serialNumber,orderNumber,appointmentType,doctorId,
+                        doctorName,departmentId,departmentName,beginTime,noonType,
+                        doctorPost,createTime,lockStatus,approach)
+    values
+        (#{orderId},#{cardType},#{cardNo},#{name},#{iDCard},#{passWord},
+        #{proCode},#{serialNumber},#{orderNumber},#{appointmentType},#{doctorId},
+        #{doctorName},#{departmentId},#{departmentName},#{beginTime},#{noonType},
+        #{doctorPost},#{createTime},#{lockStatus},#{approach})
+    </insert>
+    
+    <!-- 预约挂号支付数据 -->
+    <insert id="insertSubscriptionToPay" parameterType="java.util.Map">
+    insert into
+        t_subscriptiontopay_order(orderId,cardType,cardNo,name,idCard,passWord,
+                        proCode,serialNumber,orderNumber,bespeakDate,appointmentType,doctorId,
+                        doctorName,departmentId,departmentName,beginTime,noonType,
+                        doctorPost,createTime,lockStatus,approach)
+    values
+        (#{orderId},#{cardType},#{cardNo},#{name},#{iDCard},#{password},
+        #{proCode},#{serialNumber},#{orderNumber},#{bespeakDate},#{appointmentType},#{doctorId},
+        #{doctorName},#{departmentId},#{departmentName},#{beginTime},#{noonType},
+        #{doctorPost},#{createTime},#{lockStatus},#{approach})
+    </insert>
+    
+     <!-- 预约挂号支付数据 -->
+    <insert id="insertSubscription" parameterType="java.util.Map">
+    insert into
+        t_subscriptiontopay_order(orderId,cardType,cardNo,name,idCard,passWord,
+                        proCode,serialNumber,orderNumber,bespeakDate,appointmentType,
+                        doctorId,doctorName,departmentName,departmentId,beginTime,
+                        noonType,doctorPost,createTime,lockStatus,billNo,approach)
+    values
+        (#{orderId},#{cardType},#{cardNo},#{name},#{iDCard},#{password},
+        #{proCode},#{serialNumber},#{orderNumber},#{bespeakDate},#{appointmentType},
+        #{doctorId},#{doctorName},#{departmentName},#{departmentId},#{beginTime},
+        #{noonType},#{doctorPost},#{createTime},#{lockStatus},#{billNo},#{approach})
+    </insert>
+    
+    
+    <!-- 门诊缴费支付数据 -->
+    <insert id="insertToPay" parameterType="java.util.Map">
+    insert into
+        t_topay_order(orderId,cardType,cardNo,passWord,billNo,billingDepartmentId,
+        			  billingDepartment,checkInTime,billingDoctor,billCost)
+    values
+        (#{orderId},#{cardType},#{cardNo},#{passWord},#{billNo},#{billingDepartmentId},
+        #{billingDepartment},#{checkInTime},#{billingDoctor},#{billCost})
+    </insert>
+    
+    <!-- 住院预交支付数据 -->
+    <insert id="insertPrePayExpense" parameterType="java.util.Map">
+    insert into
+        t_prepayexpense_order(orderId,cardType,cardNo,name,idCard,departmentName,departmentId,approach,inhospitalArea,inhosDate)
+    values
+        (#{orderId},#{cardType},#{cardNo},#{name},#{iDCard},#{departmentName},#{departmentId},#{approach},#{inhospitalArea},#{inhosDate})
+    </insert>
+    
+    <!-- 获取当日挂号支付数据 -->
+    <select id="getRegisterPay" parameterType="java.lang.String" resultType="java.util.Map">
+    SELECT *
+    FROM t_registerpay_order 
+    <where>
+      1=1
+      <if test="_parameter!= null and _parameter!=''">
+        AND orderId = #{orderId}
+      </if>
+    </where>
+    <!-- ORDER BY createtime desc -->
+    </select>
+    
+    <!-- 获取预约挂号支付数据 -->
+    <select id="getSubscriptionToPay" parameterType="java.lang.String" resultType="java.util.Map">
+    SELECT *
+    FROM t_subscriptiontopay_order 
+    <where>
+      1 = 1
+      <if test="_parameter!=null and _parameter!=''">
+        AND orderId = #{orderId}
+      </if>
+    </where>
+   <!-- ORDER BY createtime desc -->
+    </select>
+    
+    <!-- 获取门诊缴费支付数据 -->
+    <select id="getToPay" parameterType="java.lang.String" resultType="java.util.Map">
+    SELECT *
+    FROM t_topay_order 
+    <where>
+      1=1
+      <if test="_parameter!= null and _parameter!=''">
+        AND orderId = #{orderId}
+      </if>
+    </where>
+   <!-- ORDER BY createtime desc -->
+    </select>
+    
+    <!-- 获取住院预交支付数据 -->
+    <select id="getPrePayExpense" parameterType="java.lang.String" resultType="java.util.Map">
+    SELECT *
+    FROM t_prepayexpense_order 
+    <where>
+     1=1
+      <if test="_parameter != null and _parameter!=''">
+        AND orderId = #{orderId}
+      </if>
+    </where>
+   <!-- ORDER BY createtime desc -->
+    </select>
+    
+    <update id="updateSubscriptionToPay" parameterType="java.util.Map">
+    UPDATE t_subscriptiontopay_order 
+    SET billNo=#{billNo}, orderNumber=#{appointmentNumber}, departmentId=#{departmentId}, beginTime=#{beginTime}
+    <where>
+      orderId = #{orderId}
+    </where>
+    </update>
+    
+     <update id="updatePrePayExpense" parameterType="java.util.Map">
+    UPDATE t_prepayexpense_order 
+    SET billNo=#{billNo}, payID=#{payID}, payType=#{payType}
+    <where>
+      orderId = #{orderId}
+    </where>
+    </update>
+    
+     <update id="updateToPay" parameterType="java.util.Map">
+    UPDATE t_topay_order 
+    SET billNo=#{billNo}, payID=#{payID}, payType=#{payType}, drugWinNo=#{drugWinNo}
+    <where>
+      orderId = #{orderId}
+    </where>
+    </update>
+    
+     <update id="updateRegisterPay" parameterType="java.util.Map">
+    UPDATE t_registerpay_order 
+    SET billNo=#{billNo}, OrderNumber=#{appointmentNumber}, departmentId=#{departmentId}, payId=#{payID}, payType=#{payType}, beginTime=#{beginTime}
+    <where>
+      orderId = #{orderId}
+    </where>
+    </update>
+    
+    <!-- 获取当日挂号支付流水号 -->
+    <select id="getPayNumberInRegisterPay" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT orderId FROM t_registerpay_order WHERE billNo = #{value}
+    </select>
+    
+    <!-- 获取预约挂号支付流水号 -->
+    <select id="getPayNumberInSubscriptionPay" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT orderId FROM t_subscriptiontopay_order WHERE billNo = #{value}
+    </select>
+     
+    <!-- 更新建行支付取消订单状态 -->
+    <update id="updateCancelStatus" parameterType="java.util.Map">
+    UPDATE t_payment_order 
+    SET cancelregister=#{cancelregister}, cancelregisterdate=#{cancelregisterdate}
+    <where>
+      orderId = #{orderId}
+    </where>
+    </update>
+    
+    <!-- 获取建行支付金额 -->
+    <select id="getPayAmountByOrderId" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT amount FROM t_payment_order WHERE orderId = #{value}
+    </select>
+
+    <!-- 获取订单支付方式 -->
+	  <select id="loadRecord" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT pay_type FROM t_payment_order WHERE orderId = #{value}
+    </select>
+    
+    <!-- 更新微信支付订单状态 -->
+    <update id="updateWxOrder" parameterType="com.gq.business.payment.model.TradingRecordBean">
+    UPDATE t_payment_order 
+    SET status=#{status}, createTime=#{createTime}, timeout_date=#{timeout_date}
+      , amount=#{amount}, pay_for=#{pay_for}, finish_date=#{finish_date}, pay_type=#{pay_type}, transactionId=#{transactionId}
+    <where>
+      orderId = #{orderId}
+    </where>
+    </update>
+    
+     <select id="selectAll" parameterType="java.lang.String" resultType="java.util.Map">
+        SELECT * FROM t_subscriptiontopay_order WHERE orderId=#{value}
+     </select>
+     
+     <select id="selectTodayList" parameterType="java.lang.String" resultType="java.util.Map">
+        SELECT * FROM t_registerpay_order WHERE orderId=#{value}
+     </select>
+     
+     <select id="selectPayFor" parameterType="java.lang.String" resultType="java.lang.String">
+        	SELECT pay_for FROM t_payment_order WHERE orderId=#{value}
+     </select>
+     
+     <select id="selectOrder" parameterType="java.lang.String" resultType="java.util.Map">
+        	SELECT * FROM t_payment_order WHERE orderId=#{value}
+     </select>
+     
+     <!-- 获取订单支付状态 -->
+    <select id="getPaymentStatus" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT status FROM t_payment_order WHERE orderId = #{value}
+    </select>
+    
+    <!-- 获取当日挂号已锁号列表 -->
+    <select id="getRegisterPayList" resultType="java.util.Map">
+        SELECT *
+        FROM t_registerpay_order 
+        <where>
+            lockStatus = '0' AND billNo IS NULL
+        </where>
+        ORDER BY createtime desc
+    </select>
+    
+    <!-- 获取预约挂号已锁号列表 -->
+    <select id="getSubscriptionToPayList" resultType="java.util.Map">
+        SELECT *
+        FROM t_subscriptiontopay_order 
+        <where>
+            lockStatus = '0' AND billNo IS NULL
+        </where>
+        ORDER BY createtime desc
+    </select>
+    
+    <!-- 更改当日挂号已锁号状态 -->
+    <update id="updateRegisterPayLockStatus" parameterType="java.util.Map">
+        UPDATE t_registerpay_order 
+        SET lockStatus=#{lockStatus}
+        <where>
+            orderId = #{orderId}
+        </where>
+    </update>
+    
+    <!-- 更改预约挂号已锁号状态 -->
+    <update id="updateSubscriptionToPayLockStatus" parameterType="java.util.Map">
+        UPDATE t_subscriptiontopay_order 
+        SET lockStatus=#{lockStatus}
+        <where>
+            orderId = #{orderId}
+        </where>
+    </update>
+     <!-- 获取订单支付状态 -->
+    <select id="selectDate" parameterType="java.lang.String" resultType="java.util.Map">
+        SELECT * FROM t_subscriptiontopay_order WHERE billNo = #{billNo}
+    </select>
+	<!-- 根据cardNo查询就诊人姓名 -->
+    <select id="selectPatientname" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT patientname FROM t_familycard WHERE incardno = #{0} AND userid = #{1}
+    </select>
+    <!-- 更改预约挂号状态 -->
+    <update id="updateSubscriptionCancelregister" parameterType="java.util.Map">
+        UPDATE t_payment_order 
+        SET cancelregister=#{cancelregister}
+        <where>
+            orderId = #{orderId}
+        </where>
+    </update>
+    
+     <!-- 门诊缴费明细 -->
+    <insert id="insertToPayDetail" parameterType="java.util.Map">
+    insert into
+        t_topay_detail(billNo,orderNumber,itemType,itemCode,itemName,spec,unit,unitPrice,amount,detailCost)
+    values
+        (#{billNo},#{orderNumber},#{itemType},#{itemCode},#{itemName},#{spec},#{unit},#{unitPrice},#{amount},#{detailCost})
+    </insert>
+    
+    <select id="getPayType" parameterType="java.lang.String" resultType="java.lang.String">
+     select pay_type from t_payment_order where orderId=#{value}
+    </select>
+    
+    
+    <insert id="insertlog" parameterType="com.gq.business.payment.model.LogBean">
+    	insert into t_logMessage(orderId,payType,amount,remark,resultCode,resultMsg,hisResultCode,hisResultMsg,refundhisResultMsg,intoinfo,startTime) 
+    	values(#{orderId},#{payType},#{amount},#{remark},#{resultCode},#{resultMsg},#{hisResultCode},#{hisResultMsg},#{refundhisResultMsg},#{into},#{startTime})
+    </insert>
+    
+    <update id="updatelog"  parameterType="com.gq.business.payment.model.LogBean">
+    update t_logMessage 
+	 <trim prefix="set" suffixOverrides=",">
+	 	<if test="resultCode != null and resultCode != ''">ResultCode =#{resultCode},</if>
+	 	<if test="resultCode != null and resultCode != ''">ResultCode =#{resultCode},</if>
+		 <if test="hisResultCode != null and hisResultCode != ''">hisResultCode =#{hisResultCode},</if>
+		 <if test="hisResultMsg != null and hisResultMsg != ''">hisResultMsg=#{hisResultMsg},</if>	
+		 <if test="into != null and into != ''">intoinfo=#{into},</if>	
+		 <if test="callHisPay != null and callHisPay != ''">callHisPay=#{callHisPay},</if>
+		 <if test="refundhisResultMsg != null and refundhisResultMsg != ''">refundhisResultMsg=#{refundhisResultMsg},</if>
+		 
+	 </trim>
+	    where orderId = #{orderId}
+    </update>
+</mapper>

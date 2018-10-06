@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gq.business.inforesources.mappers.ManageHospitalNewsMapper">
+
+	<!-- 新增 -->
+	<insert id="addHospitalNews" parameterType="com.gq.business.inforesources.model.HospitalNewsBean">
+		INSERT INTO
+		t_hospitalnews(newstitle, newscontent,newsreleasetime,departments,handlers)
+		VALUES( 
+				#{newsTitle, jdbcType=VARCHAR} ,
+				#{newsContent, jdbcType=VARCHAR} , 
+				#{newsReleaseTime, jdbcType=VARCHAR},
+				#{departments, jdbcType=VARCHAR} ,
+				#{handlers, jdbcType=VARCHAR} )
+	</insert>
+
+	<!-- 删除 -->
+	<delete id="deleteHospitalNews" parameterType="com.gq.business.inforesources.model.HospitalNewsBean">
+		DELETE FROM
+		t_hospitalnews WHERE newsid = #{newsId}
+	</delete>
+
+		<!-- 修改 -->
+	<update id="editorHospitalNews" parameterType="com.gq.business.inforesources.model.HospitalNewsBean">
+		update 
+			t_hospitalnews
+		set 
+			newstitle =  #{newsTitle},
+			departments = #{departments},
+			handlers = #{handlers},
+			newsreleasetime = #{newsReleaseTime},
+			newscontent = #{newsContent}
+		where
+			newsid = #{newsId}
+	</update>
+	
+	<!-- 查询所有新闻记录 -->
+	<select id="selectHospitalNews" resultType="com.gq.business.inforesources.model.HospitalNewsBean">
+		select * from 
+			 t_hospitalnews
+	</select>
+	
+		<!-- 根据id查询单条记录 -->
+	<select id="selectByIdHospitalNews" resultType="com.gq.business.inforesources.model.HospitalNewsBean">
+		select * from t_hospitalnews 
+		where 
+			newsid = #{newsId}
+	</select>
+	
+</mapper>

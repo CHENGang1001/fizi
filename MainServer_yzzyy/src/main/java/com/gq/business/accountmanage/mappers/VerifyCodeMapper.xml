@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gq.business.accountmanage.mappers.VerifyCodeMapper">
+
+	<select id="checkVerifyCode" parameterType="com.gq.business.accountmanage.model.VeifyCodeBean" resultType="com.gq.business.accountmanage.model.VeifyCodeBean">
+		SELECT * FROM t_verifycode WHERE msisdn=#{msisdn} AND
+		verifyCode=#{verifyCode} ORDER BY timestamp desc
+	</select>
+
+	<insert id="insert" parameterType="com.gq.business.accountmanage.model.VeifyCodeBean">
+		INSERT INTO t_verifycode(msisdn, verifyCode, timestamp) VALUES (#{msisdn}, #{verifyCode}, now())
+	</insert>
+
+	<update id="update" parameterType="com.gq.business.accountmanage.model.VeifyCodeBean">
+		UPDATE t_verifycode SET verifyCode=#{verifyCode},timestamp=now() WHERE msisdn=#{msisdn}
+	</update>
+
+	<delete id="destory" parameterType="com.gq.business.accountmanage.model.VeifyCodeBean">
+		DELETE FROM t_verifycode WHERE msisdn = #{msisdn}
+	</delete>
+
+	<update id="truncateVerifyCode">
+	   <![CDATA[truncate table t_veifycode]]>
+	</update>
+
+	<delete id="deleteByTime">
+		<![CDATA[delete from t_verifycode where timestamp <= sysdate-1/288]]>
+	</delete>
+</mapper>

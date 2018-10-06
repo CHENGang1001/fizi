@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gq.business.inforesources.mappers.ManageHealthCareMapper">
+
+	<!-- 新增 -->
+	<insert id="addHealthCare" parameterType="com.gq.business.inforesources.model.HealthCareBean">
+		INSERT INTO
+		t_healthcare(caretitle, carecontent,carereleasetime,departments,handlers)
+		VALUES( 
+				#{careTitle, jdbcType=VARCHAR} ,
+				#{careContent, jdbcType=VARCHAR} , 
+				#{careReleaseTime, jdbcType=VARCHAR},
+				#{departments, jdbcType=VARCHAR} ,
+				#{handlers, jdbcType=VARCHAR})
+	</insert>
+	
+		<!-- 删除单条 -->
+	<delete id="deleteHealthCare" parameterType="com.gq.business.inforesources.model.HealthCareBean">
+	delete from
+		t_healthcare
+	where
+		careid = #{careId}
+	</delete>
+	
+		<!-- 根据id修改 -->
+	<update id="editorHealthCare" parameterType="com.gq.business.inforesources.model.HealthCareBean">
+	update 
+		t_healthcare
+	set
+		caretitle = #{careTitle},
+		departments = #{departments},
+		handlers = #{handlers},
+		carereleasetime = #{careReleaseTime},
+		carecontent = #{careContent}
+	where
+		careid = #{careId}
+	</update>
+	
+	<!-- 查询所有记录 -->
+	<select id="selectHealthCare" resultType="com.gq.business.inforesources.model.HealthCareBean">
+		select * from 
+			t_healthcare
+	</select>
+	
+	<!-- id查询单条记录 -->
+	<select id="selectByIdHealthCare" resultType="com.gq.business.inforesources.model.HealthCareBean">
+		select * from 
+			t_healthcare 
+		where 
+			careid = #{careId}	
+	</select>
+</mapper>

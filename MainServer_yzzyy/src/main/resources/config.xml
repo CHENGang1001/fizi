@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+     <adapter>http://222.189.155.98:8699/AdapterServer/adapter/public/service</adapter> 
+    <!--  <adapter>http://localhost/AdapterServer/adapter/public/service</adapter>   --> 
+</config>

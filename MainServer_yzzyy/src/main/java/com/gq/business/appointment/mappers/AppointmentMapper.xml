@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gq.business.appointment.mappers.AppointmentMapper">
+
+	<!-- 查出已支付的患者信息 -->
+	<select id="selectStopSchedule" parameterType="com.gq.business.appointment.model.StopScheduleBean" resultType="com.gq.business.appointment.model.StopScheduleBean">
+	SELECT
+			t1.name,
+			t1.doctorName doctorName,
+			t1.bespeakDate bespeakDate,
+			t2.createrId
+		FROM 
+			t_subscriptiontopay_order t1 
+		LEFT JOIN t_payment_order t2 ON 
+			t1.orderId = t2.orderId
+		WHERE
+			t1.proCode=#{proCode}
+		AND
+			t2.status="2"
+		AND
+			t2.cancelregister="1"
+		AND 
+			(SELECT CONCAT(SUBSTRING(t1.bespeakDate,1,11),t1.beginTime))
+		BETWEEN #{beginTime} AND #{endinTime} 
+		AND
+			t1.beginTime
+		BETWEEN #{begin} AND #{endin}
+	</select>
+
+	<!-- 查出患者的手机号msisdn -->
+	<select id="selectNum" parameterType="com.gq.business.appointment.model.StopScheduleBean" resultType="com.gq.business.appointment.model.StopScheduleBean">
+		SELECT 
+			userid,
+			msisdn
+		FROM 
+			t_publicuser
+		WHERE
+			userid=#{createrId}
+	</select>
+	
+	<!-- 查出窗口支付的患者信息 -->
+	<select id="queryStopSchedule" parameterType="com.gq.business.appointment.model.StopScheduleBean" resultType="com.gq.business.appointment.model.StopScheduleBean">
+	SELECT
+			t1.name,
+			t1.doctorName doctorName,
+			t1.bespeakDate bespeakDate,
+			t2.createrId
+		FROM 
+			t_subscriptiontopay_order t1 
+		LEFT JOIN t_payment_order t2 ON 
+			t1.orderId = t2.orderId
+		WHERE
+			t1.proCode=#{proCode}
+		AND
+			t2.pay_type="3"
+		AND
+			t2.cancelregister="1"
+		AND 
+			t1.bespeakDate
+		BETWEEN #{beginTime} AND #{endinTime}
+		AND
+		t1.beginTime
+		BETWEEN #{begin} AND #{endin}
+	</select>
+</mapper>

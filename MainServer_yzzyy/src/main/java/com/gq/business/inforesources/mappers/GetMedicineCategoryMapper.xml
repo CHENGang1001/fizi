@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gq.business.inforesources.mappers.GetMedicineCategoryMapper">
+     <select id="getMedicineCategory" resultType="com.gq.business.inforesources.model.GetMedicineCategory">
+        select * from t_medicinecategory
+    </select>
+</mapper>

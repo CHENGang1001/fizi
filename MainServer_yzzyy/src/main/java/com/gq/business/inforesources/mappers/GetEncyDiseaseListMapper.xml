@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gq.business.inforesources.mappers.GetEncyDiseaseListMapper">
+
+    <resultMap type="com.gq.business.inforesources.model.GetEncyDiseaseDetail"
+        id="GetEncyDiseaseDetail">
+        <!-- column:数据库中表的字段 property：数据库中表所有映射的实体类javaBean中的属性名 -->
+        <id column="diseaseid" property="diseaseId" />
+        <result column="diseasename" property="diseaseName" />
+        <result column="diseasetimetamp" property="diseaseTimetamp" />
+        <result column="diseasesummary" property="diseaseSummary" typeHandler="com.gq.business.inforesources.model.MyBlobTypeHandlerx" />
+        <result column="symptom" property="symptom" typeHandler="com.gq.business.inforesources.model.MyBlobTypeHandlerx" />
+        <result column="healthcare" property="healthcare" typeHandler="com.gq.business.inforesources.model.MyBlobTypeHandlerx" />
+        <result column="pathology" property="pathology" typeHandler="com.gq.business.inforesources.model.MyBlobTypeHandlerx" />
+        <result column="identification" property="identification" typeHandler="com.gq.business.inforesources.model.MyBlobTypeHandlerx" />
+        <result column="complication" property="complication" typeHandler="com.gq.business.inforesources.model.MyBlobTypeHandlerx" />
+        <result column="prevention" property="prevention" typeHandler="com.gq.business.inforesources.model.MyBlobTypeHandlerx"/>
+    </resultMap>
+
+     <select id="getEncyDiseaseList" resultType="com.gq.business.inforesources.model.GetEncyDiseaseList">
+        select * from t_diseasedetail t where t.diseasecategoryid=#{id}
+    </select>
+    
+    <select id="getEncyDiseaseDetail" resultMap="GetEncyDiseaseDetail">
+        select * from t_diseasedetail t where t.diseaseid=#{id}
+    </select>
+    
+</mapper>

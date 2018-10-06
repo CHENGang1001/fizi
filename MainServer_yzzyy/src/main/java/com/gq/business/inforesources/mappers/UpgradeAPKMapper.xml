@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gq.business.inforesources.mappers.UpgradeAPKMapper">
+
+     <select id="getLatestUpgradeAPKBean" resultType="com.gq.business.inforesources.bean.UpgradeAPKBean">
+        SELECT * FROM T_CHECKUPGRADE A
+          WHERE A.VERSIONINDEX = (SELECT MAX(VERSIONINDEX) FROM T_CHECKUPGRADE WHERE APKTYPE=#{apkType})
+           AND A.APKTYPE=#{apkType}
+	</select>
+
+   <select id="queryUpgradeApkBeanByID" resultType="com.gq.business.inforesources.bean.UpgradeAPKBean">
+        SELECT * FROM T_CHECKUPGRADE A WHERE A.UPGRADEID = #{upgradeID}
+    </select>
+
+    <select id="queryUpgradeApkBeanList" resultType="com.gq.business.inforesources.bean.UpgradeAPKBean">
+        SELECT * FROM
+        (
+        SELECT B.*,ROWNUM RN FROM
+        (SELECT * FROM T_CHECKUPGRADE A
+        <where>
+            '1'='1'
+            <if test="version != null">
+                AND A.VERSION = #{version}
+            </if>
+            <if test="apkType != null">
+                AND A.APKTYPE = #{apkType}
+            </if>
+        </where>
+        ORDER BY A.VERSION ASC) B
+        WHERE <![CDATA[ ROWNUM<= #{pageEnd} ]]>
+        )
+        WHERE RN >= #{pageStart}
+    </select>
+
+    <select id="queryUpgradeApkBeanListCount" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM
+        (SELECT * FROM T_CHECKUPGRADE A
+        <where>
+            '1'='1'
+            <if test="version != null">
+                AND A.VERSION = #{version}
+            </if>
+            <if test="apkType != null">
+                AND A.APKTYPE = #{apkType}
+            </if>
+        </where>
+        ORDER BY A.VERSION ASC)
+    </select>
+
+    <select id="checkUpgradeVersion" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM T_CHECKUPGRADE A
+          WHERE
+           (A.VERSION = #{version} OR A.VERSIONINDEX = #{versionIndex})
+            AND A.UPGRADEID != #{upgradeID}
+            AND A.APKTYPE = #{apkType}
+    </select>
+
+    <update id="updateUpgrade">
+        UPDATE T_CHECKUPGRADE
+          SET VERSION = #{version},VERSIONURL = #{versionUrl},VERSIONTYPE=#{versionType},
+              VERSIONINDEX = #{versionIndex},UPDATEDESCRIPTION=#{updateDescription},APKTYPE=#{apkType},
+              VERSIONREALPATH=#{versionRealPath}
+            WHERE UPGRADEID = #{upgradeID}
+    </update>
+
+    <insert id="insertUpgrade">
+        INSERT INTO T_CHECKUPGRADE(UPGRADEID,VERSION,VERSIONURL,VERSIONTYPE,VERSIONINDEX,UPDATEDESCRIPTION,
+        APKTYPE,VERSIONREALPATH,CREATEDATE)
+        VALUES (#{upgradeID},#{version},#{versionUrl},#{versionType},#{versionIndex},#{updateDescription,jdbcType=BLOB},
+        #{apkType},#{versionRealPath},TO_CHAR(sysdate,'YYYYMMDDHH24MISS'))
+    </insert>
+
+    <delete id="deleteUpgrade">
+        DELETE FROM T_CHECKUPGRADE A WHERE A.UPGRADEID in
+        <foreach collection="list" item="upgradeID" index="index" open="(" separator="," close=")">
+            #{upgradeID}
+        </foreach>
+    </delete>
+
+    <select id="queryUpgradeIDSequence" resultType="java.lang.String">
+        SELECT SEQ_UPGRADEID.NEXTVAL FROM dual
+    </select>
+</mapper>

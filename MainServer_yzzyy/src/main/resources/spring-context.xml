@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" 
+	 xmlns:context="http://www.springframework.org/schema/context"
+	 xmlns:mvc="http://www.springframework.org/schema/mvc"
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	 xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.2.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd"
+	xmlns:tx="http://www.springframework.org/schema/tx">
+	
+	<!-- controller 包设置   自动扫描的包名  -->
+	<context:component-scan base-package="com.gq" />
+	<!-- 默认的注解映射的支持，自动注册DefaultAnnotationHandlerMapping和AnnotationMethodHandlerAdapter --> 
+	<mvc:annotation-driven></mvc:annotation-driven>
+	<!-- 数据源 -->
+	<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
+		<!-- 基本属性 url、user、password -->
+
+		<!-- <property name="url" value="jdbc:mysql://localhost:3306/mobile_hospital_yzzyy?useUnicode=true&amp;characterEncoding=UTF-8" /> -->
+		<property name="url" value="jdbc:mysql://116.62.16.98:3306/wcs_fuzi?useUnicode=true&amp;characterEncoding=UTF-8" /> 
+		<property name="username" value="root" />
+		<property name="password" value="lmmqxyxwjsxeqs@520WWSZ" />
+		<!-- 配置初始化大小、最小、最大 -->
+		<property name="initialSize" value="2" />
+		<property name="minIdle" value="2" />
+		<property name="maxActive" value="20" />
+		<!-- 配置获取连接等待超时的时间 -->
+		<property name="maxWait" value="60000" />
+		<!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
+		<property name="timeBetweenEvictionRunsMillis" value="60000" />
+		<!-- 配置一个连接在池中最小生存的时间，单位是毫秒 -->
+		<property name="minEvictableIdleTimeMillis" value="300000" />
+		<!-- 配置监控统计拦截的filters -->
+		<property name="filters" value="wall" />
+	</bean>
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="mapperLocations" value="classpath*:com/gq/business/**/mappers/*.xml" />
+	</bean>
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.gq.business.*.mappers" />
+	</bean>
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+	
+	<!-- 文件上传组件集成 -->
+    <bean id="multipartResolver"
+          class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <property name="maxUploadSize">
+            <value>20971520</value>
+        </property>
+    </bean>
+	
+	<tx:annotation-driven transaction-manager="transactionManager" />
+	
+	<!-- =========下面为定时任务 =================下面为定时任务====================-->
+	
+	<!-- <bean id="queryAlipayOrder" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject">
+			<ref bean="syncReconcileJob" />
+		</property>
+		<property name="targetMethod">
+			<value>execute</value>
+		</property>
+		<property name="targetMethod" value="execute" /> <property name="concurrent" value="false" /> 作业不并发调度
+	</bean> -->
+	
+		<!-- 触发释放号源的方法 -->
+<!--   <bean id="postUnlockRegisterNo" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject">
+	     	 <ref bean="UnlockRegisterNo" />
+	    </property>
+	    <property name="targetMethod">
+	     	 <value>execute</value>
+	    </property>
+    <property name="targetMethod" value="execute" /> <property name="concurrent" value="false" /> 作业不并发调度
+  </bean> -->
+	
+		<!--按定义的类名和方法名，去执行定时器所触发的方法（停诊通知） -->
+<!-- 	<bean id="StopScheduleDate" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject">
+			<ref bean="appointmentController" />
+		</property>
+		<property name="targetMethod">
+			<value>StopSchedule</value>
+		</property>
+	</bean> -->
+	   <!--按定义的类名和方法名，去执行定时器所触发的方法（更新医生信息） -->
+<!-- 	<bean id="saveDoctor" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject">
+			<ref bean="doctorAppController" />
+		</property>
+		<property name="targetMethod">
+			<value>saveDoctor</value>
+		</property>
+	</bean> -->
+	<!-- ======================== 调度触发器 ======================== -->  
+		<!-- 启动触发器的配置结束 -->
+	<!-- <bean id="queryAlipayOrderTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="queryAlipayOrder"></property>
+		每天03:30运行一次
+		<property name="cronExpression" value="0 30 08 * * ?" />
+	</bean>
+	
+		触发释放号源的方法
+	<bean id="postUnlockRegisterNoTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+    <property name="jobDetail" ref="postUnlockRegisterNo"></property>
+    每3分钟运行一次
+    <property name="cronExpression" value="0 3/3 * * * ?" />
+  </bean>
+ 	
+  		触发停诊通知的方法
+	<bean id="queryStopSchedule"
+		class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="StopScheduleDate"></property>
+		每天固定的时间段
+		<property name="cronExpression" value="0 30 17 * * ?" />
+	</bean>
+	
+	医生版更新医生信息的方法
+	<bean id="updateStaff"
+		class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="saveDoctor"></property>
+		每天固定的时间段
+		<property name="cronExpression" value="0 00 5 * * ?" />
+	</bean>       -->
+	
+	<!-- ======================== 调度工厂 ======================== -->  
+	<!-- 启动触发器的配置开始 -->
+<!-- 	<bean id="myScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<ref bean="queryAlipayOrderTrigger" />
+				<ref bean="postUnlockRegisterNoTrigger" />	启动释放号源的触发器
+				<ref bean="queryStopSchedule" />			启动停诊通知的触发器
+				<ref bean="updateStaff" />                   医生版更新医生信息
+			</list>
+		</property>
+	</bean> -->
+</beans>
